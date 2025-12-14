@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+
+  web:
+    build: .
+    command: gunicorn gestion_empresas.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    volumes:
+      - .:/code
+    ports:
+      - '8000:8000'
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      - redis
