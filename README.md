@@ -1,14 +1,33 @@
 # Gestión de Empresas — API Django + DRF
 
-Resumen rápido
-- API REST para gestionar empresas con Django + Django REST Framework.
-- Rutas principales expuestas en `/api/empresas/`.
+## Descripción
+Proyecto API REST para gestionar el catálogo de empresas: creación, lectura, actualización y baja lógica (soft-delete).
+Es un ejercicio/plantilla para proyectos Django + DRF con buenas prácticas: autenticación por token, paginación, filtros, documentación OpenAPI y despliegue en contenedores.
 
-Requisitos
-- Python 3.11+ (o 3.10+)
+## Características principales
+- CRUD completo para `Empresa` con validaciones (RUC, email, unicidad).
+- Baja lógica: los borrados marcan la empresa como inactiva (`activo=False`).
+- Filtros por `sector`, búsqueda por `nombre`/`ruc`, ordenamiento y paginación.
+- Autenticación por token (DRF TokenAuth) y permisos por rol (administradores para operaciones peligrosas).
+- Cache en listados con Redis (fallback a memoria local si no hay Redis), throttling básico y logging de consola.
+- Documentación OpenAPI con Swagger UI.
 
-Instalación (entorno Windows - PowerShell)
+## Tecnologías y dependencias
+- Python 3.10+ / 3.11+
+- Django
+- Django REST Framework (DRF)
+- `rest_framework.authtoken` (Token Auth)
+- `django-filter`
+- `drf-spectacular` (OpenAPI / Swagger)
+- `django-cors-headers`
+- `django-redis` + `redis` (caching)
+- Docker / docker-compose
+- Gunicorn (producción)
 
+## Requisitos
+- `python` y `pip`
+
+## Instalación rápida (Windows - PowerShell)
 1) Crear y activar virtualenv
 ```powershell
 python -m venv venv
@@ -17,80 +36,86 @@ python -m venv venv
 
 2) Instalar dependencias
 ```powershell
-pip install django djangorestframework djangorestframework-authtoken django-filter corsheaders
+pip install -r requirements.txt
 ```
 
-3) Migraciones y usuario
+3) Migraciones y (opcional) superuser
 ```powershell
 python gestion_empresas/manage.py makemigrations
 python gestion_empresas/manage.py migrate
-# (opcional) crear superuser interactivo
 python gestion_empresas/manage.py createsuperuser
 ```
 
-4) (Opcional) crear el usuario de prueba y token automáticamente
+4) (Opcional) crear usuario de prueba y token
 ```powershell
 python gestion_empresas/create_test_user.py
-# Esto mostrará USER, PASSWORD y TOKEN
+# Muestra credenciales de prueba (dev).
 ```
 
-Ejecutar servidor
+## Ejecutar servidor (desarrollo)
 ```powershell
 python gestion_empresas/manage.py runserver
 ```
 
-Endpoints y pruebas
-- Admin: http://127.0.0.1:8000/admin/
-- API base: http://127.0.0.1:8000/api/empresas/
+## Credenciales de ejemplo (entorno de desarrollo)
+- Usuario: `testadmin`
+- Contraseña: `TestPass123`
+- Para obtener/regenear el token ejecuta `python gestion_empresas/create_test_user.py`.
 
-Ejemplos curl
+## Rutas importantes
+- Admin: http://127.0.0.1:8000/admin/
+- API (versionada): http://127.0.0.1:8000/api/v1/empresas/
+- OpenAPI JSON: http://127.0.0.1:8000/api/schema/
+- Swagger UI: http://127.0.0.1:8000/api/schema/swagger-ui/
+
+## Ejemplos rápidos (usar Token en `Authorization: Token <TU_TOKEN>`)
 ```bash
-# Listar (usar el token generado)
-curl -H "Authorization: Token <TU_TOKEN>" http://127.0.0.1:8000/api/empresas/
+# Listar
+curl -H "Authorization: Token <TU_TOKEN>" http://127.0.0.1:8000/api/v1/empresas/
 
 # Crear
 curl -X POST -H "Authorization: Token <TU_TOKEN>" -H "Content-Type: application/json" \
   -d '{"ruc":"80012345-6","nombre":"ACME S.A.","sector":"Tecnología","email":"contacto@acme.com"}' \
-  http://127.0.0.1:8000/api/empresas/
+  http://127.0.0.1:8000/api/v1/empresas/
 
 # Detalle
-curl -H "Authorization: Token <TU_TOKEN>" http://127.0.0.1:8000/api/empresas/1/
+curl -H "Authorization: Token <TU_TOKEN>" http://127.0.0.1:8000/api/v1/empresas/1/
 
 # Patch
 curl -X PATCH -H "Authorization: Token <TU_TOKEN>" -H "Content-Type: application/json" \
-  -d '{"email":"nuevo@acme.com"}' http://127.0.0.1:8000/api/empresas/1/
+  -d '{"email":"nuevo@acme.com"}' http://127.0.0.1:8000/api/v1/empresas/1/
 
 # Delete (soft-delete)
-curl -X DELETE -H "Authorization: Token <TU_TOKEN>" http://127.0.0.1:8000/api/empresas/1/
+curl -X DELETE -H "Authorization: Token <TU_TOKEN>" http://127.0.0.1:8000/api/v1/empresas/1/
 ```
 
-Notas y recomendaciones
-- En `gestion_empresas/gestion_empresas/settings.py` ya habilité `CORS_ALLOW_ALL_ORIGINS` para desarrollo y `ALLOWED_HOSTS=['*']`.
-- Hay scripts útiles ya creados: `gestion_empresas/create_test_user.py` (genera `testadmin` y token) y `gestion_empresas/test_client_api.py` (prueba endpoints usando Django Test Client).
-- Para producción: ajustar `ALLOWED_HOSTS`, desactivar `DEBUG`, usar base de datos y servidor WSGI/ASGI apropiado.
+## Archivos clave
+- `gestion_empresas/empresas/models.py`
+- `gestion_empresas/empresas/serializers.py`
+- `gestion_empresas/empresas/views.py`
+- `gestion_empresas/empresas/urls.py`
 
-Archivos relevantes
-- [gestion_empresas/empresas/models.py](gestion_empresas/empresas/models.py)
-- [gestion_empresas/empresas/serializers.py](gestion_empresas/empresas/serializers.py)
-- [gestion_empresas/empresas/views.py](gestion_empresas/empresas/views.py)
-- [gestion_empresas/empresas/urls.py](gestion_empresas/empresas/urls.py)
+## Tests
+- Tests de integración básicos en `empresas_tests/test_api.py`.
+- Ejecutar tests:
+```bash
+python gestion_empresas/manage.py test
+```
 
-Si quieres, agrego:
-- Documentación automática (Swagger/OpenAPI)
-- Tests unitarios para serializer y viewset
+## Docker (local)
+- Levantar con Redis y la app:
+```bash
+docker compose up --build
+```
 
-Mejoras añadidas en este commit:
-- Caching con Redis (fallback a memoria local si no hay REDIS_URL).
+## Mejoras implementadas
+- Caching con Redis (fallback a memoria local si no hay `REDIS_URL`).
 - Versionado de la API en `/api/v1/`.
 - Documentación OpenAPI/Swagger disponible en `/api/schema/` y `/api/schema/swagger-ui/`.
 - Throttling básico (Anon y User rate limits).
 - Logging básico a consola.
 - `Dockerfile` y `docker-compose.yml` con servicio `redis`.
-- `requirements.txt` con dependencias sugeridas.
-- Tests de integración en `empresas_tests/test_api.py`.
+- `requirements.txt` con dependencias recomendadas.
+- Tests de integración básicos.
 
-Cómo usar Docker (rápido):
-```bash
-docker compose up --build
-```
 La app quedará en http://127.0.0.1:8000/ y Redis disponible en el contenedor.
